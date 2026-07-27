@@ -1,0 +1,4 @@
+RewriteEngine On
+
+RewriteCond %{HTTP_HOST} ^www\.tabeebway\.com$ [NC]
+RewriteRule ^(.*)$ https://tabeebway.com/$1 [R=301,L]
