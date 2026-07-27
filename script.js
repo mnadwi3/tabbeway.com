@@ -113,16 +113,36 @@ document.querySelectorAll(".faq-q").forEach(btn => {
 });
 
 
-// ================= GOOGLE SHEET FORM =================
+// ================= GOOGLE SHEET FORMS + LEAD TRACKING =================
 
 const scriptURL = "https://script.google.com/macros/s/AKfycbxIIW0vjxfuFn6pdkkzGDi35Pbx_xjFfFwYlQdf77EuTzPqsnNrj0rxVKdO5F4lgOqJ/exec";
 
-const form = document.getElementById("appointmentForm");
+/**
+ * Push a single generate_lead event to the GTM dataLayer.
+ * Used by GA4 / Google Ads as the primary Lead conversion.
+ */
+function fireLeadEvent() {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+        event: "generate_lead"
+    });
+}
 
-if (form) {
+/** Show the shared "Appointment Request Sent!" success modal. */
+function showSuccessPopup() {
+    const popup = document.getElementById("successPopup");
+    if (popup) {
+        popup.classList.add("show");
+    }
+}
 
-    form.addEventListener("submit", function (e) {
-
+/**
+ * Shared AJAX submit handler for both lead forms.
+ * Fires generate_lead only after a successful network response
+ * and after the success popup is shown.
+ */
+function handleFormSubmit(form) {
+    return function (e) {
         e.preventDefault();
         e.stopPropagation();
 
@@ -130,65 +150,34 @@ if (form) {
             method: "POST",
             body: new FormData(form)
         })
-
-            .then(() => {
+            .then((response) => {
+                // Reject non-OK CORS responses. Opaque responses
+                // (no-cors) cannot be inspected — treat as success.
+                if (response && response.type !== "opaque" && !response.ok) {
+                    throw new Error("Form submission failed (" + response.status + ")");
+                }
 
                 form.reset();
-
-                document
-                    .getElementById("successPopup")
-                    .classList.add("show");
-
+                showSuccessPopup();
+                fireLeadEvent(); // exactly once per successful lead
             })
-
-            .catch(error => {
-
+            .catch((error) => {
                 console.error(error);
-
                 alert("Something went wrong. Please try again.");
-
             });
 
         return false;
-
-    });
-
+    };
 }
-// ================= CONTACT FORM =================
+
+const appointmentForm = document.getElementById("appointmentForm");
+if (appointmentForm) {
+    appointmentForm.addEventListener("submit", handleFormSubmit(appointmentForm));
+}
 
 const contactForm = document.getElementById("contactForm");
-
 if (contactForm) {
-
-    contactForm.addEventListener("submit", function (e) {
-
-        e.preventDefault();
-
-        fetch(scriptURL, {
-            method: "POST",
-            body: new FormData(contactForm)
-        })
-
-            .then(() => {
-
-                contactForm.reset();
-
-                document
-                    .getElementById("successPopup")
-                    .classList.add("show");
-
-            })
-
-            .catch(error => {
-
-                console.error(error);
-
-                alert("Something went wrong. Please try again.");
-
-            });
-
-    });
-
+    contactForm.addEventListener("submit", handleFormSubmit(contactForm));
 }
 
 // ================= POPUP =================
