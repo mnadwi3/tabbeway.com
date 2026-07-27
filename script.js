@@ -122,10 +122,12 @@ const scriptURL = "https://script.google.com/macros/s/AKfycbxIIW0vjxfuFn6pdkkzGD
  * Used by GA4 / Google Ads as the primary Lead conversion.
  */
 function fireLeadEvent() {
+    console.log("C"); // TEMP: inside fireLeadEvent (before push)
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
         event: "generate_lead"
     });
+    console.log("C"); // TEMP: after dataLayer.push
 }
 
 /** Show the shared "Appointment Request Sent!" success modal. */
@@ -146,11 +148,13 @@ function handleFormSubmit(form) {
         e.preventDefault();
         e.stopPropagation();
 
+        console.log("A"); // TEMP: before fetch
         fetch(scriptURL, {
             method: "POST",
             body: new FormData(form)
         })
             .then((response) => {
+                console.log("B"); // TEMP: after fetch (then entered)
                 // Reject non-OK CORS responses. Opaque responses
                 // (no-cors) cannot be inspected — treat as success.
                 if (response && response.type !== "opaque" && !response.ok) {
@@ -158,7 +162,9 @@ function handleFormSubmit(form) {
                 }
 
                 form.reset();
+                console.log("B"); // TEMP: before showSuccessPopup
                 showSuccessPopup();
+                console.log("B"); // TEMP: after showSuccessPopup / before fireLeadEvent
                 fireLeadEvent(); // exactly once per successful lead
             })
             .catch((error) => {
